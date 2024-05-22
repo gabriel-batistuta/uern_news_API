@@ -1,5 +1,6 @@
 *.json
 *.xml
 venv/
+static/
 # bytecode do python
 __pycache__
