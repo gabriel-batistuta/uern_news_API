@@ -1,38 +1,19 @@
-import sys
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+import aiofiles
+import uvicorn
 
-import core
-from BotAuth import DataBot
+app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="public"), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    async with aiofiles.open("public/index.html", mode="r") as file:
+        content = await file.read()
+        print(content)
+    return HTMLResponse(content=content)
 
 if __name__ == '__main__':
-    # verificar versao do python
-    if sys.version_info[0] < 3 or sys.version_info[1] < 6:
-        sys.exit('Este algoritmo requer uma versao do python 3.6 ou superior!')
-
-
-    print('[CORE] Iniciando algoritmo ...')
-
-    URLS = [
-        'http://portal.uern.br/blog/category/noticias/feed/',
-        'https://aduern.org.br/category/noticias/feed/'
-    ]
-
-    token, chatId = DataBot.readJson()
-    database = core.Database(sizeHistory=len(URLS)*100)
-    files = core.downloadXML(URLS)
-
-    if len(files) > 0:
-        analyze = core.AnalyzeRSS(filenames=files)
-        datas = analyze.getData()
-        database.add(datas)
-
-    messages = database.getWaitingMessages()
-
-    bot = core.BotTelegram(token, chatId)
-
-    for message in messages:
-        messageToSend = message['title'] + '\n' + message['link']
-
-        if bot.sendMessage(messageToSend):
-            database.removeFromWaitList(message)
-        else:
-            print('Error')
+    uvicorn.run(app, host="localhost", port=8080)
